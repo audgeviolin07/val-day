@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import { Suspense, useState, useRef } from 'react'
 
 const Logo = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Logo), { ssr: false })
 const Dog = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Dog), { ssr: false })
@@ -10,7 +10,7 @@ const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.
   ssr: false,
   loading: () => (
     <div className='flex h-96 w-full flex-col items-center justify-center'>
-      <svg className='-ml-1 mr-3 h-5 w-5 animate-spin text-black' fill='none' viewBox='0 0 24 24'>
+      <svg className='-ml-1 mr-3 size-5 animate-spin text-black' fill='none' viewBox='0 0 24 24'>
         <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4' />
         <path
           className='opacity-75'
@@ -24,59 +24,93 @@ const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.
 const Common = dynamic(() => import('@/components/canvas/View').then((mod) => mod.Common), { ssr: false })
 
 export default function Page() {
+  const [screen, setScreen] = useState('greeting') // 'greeting', 'ask', or 'answer'
+  const [answer, setAnswer] = useState(null)
+  const audioRef = useRef(null)
+
+  const playSound = async () => {
+    try {
+      const audio = new Audio('https://www.myinstants.com/media/sounds/vine-boom.mp3')
+      audio.volume = 1.0
+      await audio.play()
+      setScreen('ask')
+    } catch (error) {
+      console.log("Audio playback failed:", error)
+      setScreen('ask') // Continue to next screen even if sound fails
+    }
+  }
+
   return (
-    <>
-      <div className='mx-auto flex w-full flex-col flex-wrap items-center md:flex-row  lg:w-4/5'>
-        {/* jumbo */}
-        <div className='flex w-full flex-col items-start justify-center p-12 text-center md:w-2/5 md:text-left'>
-          <p className='w-full uppercase'>Next + React Three Fiber</p>
-          <h1 className='my-4 text-5xl font-bold leading-tight'>Next 3D Starter</h1>
-          <p className='mb-8 text-2xl leading-normal'>A minimalist starter for React, React-three-fiber and Threejs.</p>
+    <div className='min-h-screen bg-pink-50'>
+      {screen === 'greeting' ? (
+        <div className='flex min-h-screen flex-col items-center justify-center'>
+          <button
+            onClick={playSound}
+            className='rounded-lg bg-pink-500 px-8 py-4 text-2xl font-bold text-white transition-colors hover:bg-pink-600'
+          >
+            Hi, click this button! ✨
+          </button>
         </div>
+      ) : screen === 'ask' ? (
+        <div className='mx-auto flex w-full flex-col items-center justify-center p-8'>
+          <div className='mb-12 w-full text-center'>
+            <h1 className='mb-8 text-center text-5xl font-bold text-pink-600'>Will you be my Valentine?</h1>
+            
+            <div className='flex justify-center gap-8'>
+              <button
+                onClick={() => setAnswer(true)}
+                className='rounded-lg bg-pink-500 px-8 py-3 text-xl font-bold text-white transition-colors hover:bg-pink-600'
+              >
+                Yes! 💖
+              </button>
+              <button
+                onClick={() => setAnswer(false)}
+                className='rounded-lg bg-gray-500 px-8 py-3 text-xl font-bold text-white transition-colors hover:bg-gray-600'
+              >
+                No 💔
+              </button>
+            </div>
+          </div>
 
-        <div className='w-full text-center md:w-3/5'>
-          <View className='flex h-96 w-full flex-col items-center justify-center'>
-            <Suspense fallback={null}>
-              <Logo route='/blob' scale={0.6} position={[0, 0, 0]} />
-              <Common />
-            </Suspense>
-          </View>
-        </div>
-      </div>
+          <div className='grid w-full max-w-4xl grid-cols-3 gap-8'>
+            <View className='h-64 w-full'>
+              <Suspense fallback={null}>
+                <Logo scale={0.4} position={[0, 0, 0]} />
+                <Common color='pink' />
+              </Suspense>
+            </View>
 
-      <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row  lg:w-4/5'>
-        {/* first row */}
-        <div className='relative h-48 w-full py-6 sm:w-1/2 md:my-12 md:mb-40'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Events are propagated</h2>
-          <p className='mb-8 text-gray-600'>Drag, scroll, pinch, and rotate the canvas to explore the 3D scene.</p>
+            <View className='h-64 w-full'>
+              <Suspense fallback={null}>
+                <Dog scale={1.5} position={[0, -1.6, 0]} rotation={[0.0, -0.3, 0]} />
+                <Common color='pink' />
+              </Suspense>
+            </View>
+
+            <View className='h-64 w-full'>
+              <Suspense fallback={null}>
+                <Duck scale={1.5} position={[0, -1.6, 0]} />
+                <Common color='pink' />
+              </Suspense>
+            </View>
+          </div>
         </div>
-        <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full  sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Dog scale={2} position={[0, -1.6, 0]} rotation={[0.0, -0.3, 0]} />
-              <Common color={'lightpink'} />
-            </Suspense>
-          </View>
+      ) : (
+        <div className='flex min-h-screen flex-col items-center justify-center gap-8'>
+          <h1 className='text-4xl font-bold text-pink-600'>
+            {answer ? "Yay! You've made me the happiest! 💖" : "Maybe next time... 💔"}
+          </h1>
+          <button
+            onClick={() => {
+              setAnswer(null)
+              setScreen('ask')
+            }}
+            className='rounded-lg bg-pink-500 px-6 py-2 text-lg font-bold text-white transition-colors hover:bg-pink-600'
+          >
+            Go Back
+          </button>
         </div>
-        {/* second row */}
-        <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full animate-bounce sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Duck route='/blob' scale={2} position={[0, -1.6, 0]} />
-              <Common color={'lightblue'} />
-            </Suspense>
-          </View>
-        </div>
-        <div className='w-full p-6 sm:w-1/2'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Dom and 3D are synchronized</h2>
-          <p className='mb-8 text-gray-600'>
-            3D Divs are renderer through the View component. It uses gl.scissor to cut the viewport into segments. You
-            tie a view to a tracking div which then controls the position and bounds of the viewport. This allows you to
-            have multiple views with a single, performant canvas. These views will follow their tracking elements,
-            scroll along, resize, etc.
-          </p>
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   )
 }
